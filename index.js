@@ -12,11 +12,91 @@ const _ = require('lodash');
 
 BbPromise.promisifyAll(fse);
 
+const importValueArraySchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      "Fn::ImportValue": {},
+    },
+    additionalProperties: false,
+    required: ["Fn::ImportValue"],
+  },
+};
+
 class ServerlessAWSBatch {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
     this.provider = this.serverless.getProvider('aws');
+
+    serverless.configSchemaHandler.defineProvider("aws", {
+      provider: {
+        properties: {
+          batch: {
+            type: "object",
+            properties: {
+              Type: {
+                type: "string",
+              },
+              SecurityGroupIds: importValueArraySchema,
+              Subnets: importValueArraySchema,
+              InstanceTypes: {
+                type: "array",
+                items: { type: "string" },
+              },
+              MinvCpus: {
+                type: "integer",
+              },
+              MaxvCpus: {
+                type: "integer",
+              },
+              Tags: {
+                type: "object",
+                additionalProperties: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    serverless.configSchemaHandler.defineFunctionProperties("aws", {
+      properties: {
+        batch: {
+          type: "object",
+          properties: {
+            ContainerProperties: {
+              type: "object",
+              properties: {
+                Memory: {
+                  type: "integer",
+                },
+                Vcpus: {
+                  type: "integer",
+                },
+              },
+            },
+            RetryStrategy: {
+              type: "object",
+              properties: {
+                Attempts: {
+                  type: "integer",
+                },
+              },
+            },
+            Timeout: {
+              type: "object",
+              properties: {
+                AttemptDurationSeconds: {
+                  type: "integer",
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     // Make sure that we add the names for our ECR, docker, and batch resources to the provider
     _.merge(
